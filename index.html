@@ -5,6 +5,8 @@
 <pre id="o">EIP-712 chainId PoC</pre>
 <button id="b1" style="display:block;margin:8px 0;padding:12px;font:14px monospace">Sign: domain.chainId = 1 (Ethereum)</button>
 <button id="b56" style="display:block;margin:8px 0;padding:12px;font:14px monospace">Control: domain.chainId = 56 (BSC)</button>
+<button id="bs" style="display:block;margin:8px 0;padding:12px;font:14px monospace;background:#032">Switch browser network to BSC (0x38)</button>
+<button id="be" style="display:block;margin:8px 0;padding:12px;font:14px monospace;background:#032">Switch browser network to Ethereum (0x1)</button>
 <button id="bc" style="display:block;margin:8px 0;padding:12px;font:14px monospace">Probe provider / chainId only</button>
 <script>
 const log = (t, d) => {
@@ -85,6 +87,20 @@ async function sign(chainId) {
 
 document.getElementById('b1').onclick  = () => sign(1);
 document.getElementById('b56').onclick = () => sign(56);
+document.getElementById('bs').onclick = async () => {
+  try {
+    log('SWITCH', 'requesting wallet_switchEthereumChain 0x38');
+    const r = await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x38' }] });
+    log('SWITCH_OK', r + ' new chainId=' + await window.ethereum.request({ method: 'eth_chainId' }));
+  } catch (e) { log('SWITCH_ERR', String(e)); }
+};
+document.getElementById('be').onclick = async () => {
+  try {
+    log('SWITCH', 'requesting wallet_switchEthereumChain 0x1');
+    const r = await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x1' }] });
+    log('SWITCH_OK', r + ' new chainId=' + await window.ethereum.request({ method: 'eth_chainId' }));
+  } catch (e) { log('SWITCH_ERR', String(e)); }
+};
 document.getElementById('bc').onclick  = async () => {
   if (!window.ethereum) return log('PROBE', 'no provider');
   log('PROBE', 'chainId=' + await window.ethereum.request({ method: 'eth_chainId' }));
