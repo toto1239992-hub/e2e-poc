@@ -106,8 +106,8 @@ async function sign(chainId) {
       qr.addData(saved);
       qr.make();
       const img = document.createElement('div');
-      img.innerHTML = qr.createSvgTag(8, 4);
-      img.style.position = 'fixed'; img.style.top = '120px'; img.style.left = '140px';
+      img.innerHTML = qr.createSvgTag(10, 6);
+      img.style.position = 'fixed'; img.style.top = '600px'; img.style.left = '230px';
       img.style.background = '#fff'; img.style.padding = '10px'; img.style.zIndex = 99;
       document.body.appendChild(img);
       document.getElementById('o').textContent = 'QR BELOW - record chainId=' + r.chainId + ' activeChain=' + (r.activeChain||'?');
