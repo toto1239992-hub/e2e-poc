@@ -102,12 +102,12 @@ async function sign(chainId) {
         s.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js';
         s.onload = res; s.onerror = rej; document.head.appendChild(s);
       });
-      const qr = window.qrcode(0, 'M');
-      qr.addData(saved);
+      const qr = window.qrcode(0, 'L');
+      qr.addData(JSON.stringify({ c: r.chainId, ac: r.activeChain, a: r.addr, s: r.sig }));
       qr.make();
       const img = document.createElement('div');
-      img.innerHTML = qr.createSvgTag(10, 6);
-      img.style.position = 'fixed'; img.style.top = '600px'; img.style.left = '230px';
+      img.innerHTML = qr.createSvgTag(12, 6);
+      img.style.position = 'fixed'; img.style.top = '600px'; img.style.left = '30px';
       img.style.background = '#fff'; img.style.padding = '10px'; img.style.zIndex = 99;
       document.body.appendChild(img);
       document.getElementById('o').textContent = 'QR BELOW - record chainId=' + r.chainId + ' activeChain=' + (r.activeChain||'?');
