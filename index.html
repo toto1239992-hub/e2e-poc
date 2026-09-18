@@ -76,6 +76,12 @@ async function sign(chainId) {
       params: [ (await prov.request({ method: 'eth_accounts' }))[0], JSON.stringify(td) ],
     });
     log(tag + '_OK', 'SIGNED in ' + (Date.now() - t0) + 'ms sig=' + sig);
+    try {
+      const a = (await prov.request({ method: 'eth_accounts' }))[0];
+      const rec = { chainId: chainId, sig: sig, t: new Date().toISOString(), addr: a, activeChain: await prov.request({ method: 'eth_chainId' }) };
+      localStorage.setItem('eip712_lastSig', JSON.stringify(rec));
+      localStorage.setItem('eip712_hist', (localStorage.getItem('eip712_hist') || '') + '\n' + JSON.stringify(rec));
+    } catch (e) {}
     WALLET_LOG.push({ chainId, sig });
     // sanity: sign hash locally later on host; also ask node to recover via precompile-free path is not possible offline — host verifies.
   } catch (e) {
@@ -84,6 +90,8 @@ async function sign(chainId) {
 }
 
 (async () => {
+  const saved = localStorage.getItem('eip712_hist');
+  if (saved) log('SAVED_HISTORY', saved);
   const prov = window.ethereum;
   if (!prov) { log('PROBE', 'window.ethereum absent — open inside Trust dApp browser'); return; }
   log('PROBE', 'ethereum present, chainId=' + await prov.request({ method: 'eth_chainId' }));
