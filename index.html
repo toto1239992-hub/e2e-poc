@@ -94,15 +94,40 @@ async function sign(chainId) {
   if (saved) {
     try {
       const r = JSON.parse(saved);
-      const sig = r.sig || '';
-      const parts = sig.match(/.{1,34}/g) || [];
+      document.getElementById('o').textContent = 'VERIFYING SIG (chainId=' + r.chainId + ' addr=' + (r.addr||'?') + ')';
+      // load ethers for in-page recovery
+      await new Promise((res, rej) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js';
+        s.onload = res; s.onerror = rej; document.head.appendChild(s);
+      });
+      const ethers = window.ethers;
+      const domain = { name: 'Permit2', chainId: r.chainId, verifyingContract: '0x000000000022D473030F116dDEE9F6B43aC78BA3' };
+      const types = {
+        PermitSingle: [
+          { name: 'details', type: 'PermitDetails' },
+          { name: 'spender', type: 'address' },
+          { name: 'sigDeadline', type: 'uint256' },
+        ],
+        PermitDetails: [
+          { name: 'token', type: 'address' },
+          { name: 'amount', type: 'uint160' },
+          { name: 'expiration', type: 'uint48' },
+          { name: 'nonce', type: 'uint48' },
+        ],
+      };
+      const value = { details: { token: '0x6B175474E89094C44Da98b954EedeAC495271d0F', amount: '0', expiration: '2000000000', nonce: '0' }, spender: '0x000000000000000000000000000000000000dEaD', sigDeadline: '2000000000' };
+      let rec = '?';
+      try { rec = await ethers.utils.verifyTypedData(domain, types, value, r.sig); } catch (e) { rec = 'ERR:' + e.message.slice(0, 60); }
+      const ok = String(rec).toLowerCase() === String(r.addr||'').toLowerCase();
       document.getElementById('o').textContent =
-        'LAST SIG (chainId=' + r.chainId + ' activeChain=' + (r.activeChain||'?') + ' addr=' + (r.addr||'?') + ')';
-      document.getElementById('log').textContent = 'SIG1 ' + (parts[0]||'') + '\nSIG2 ' + (parts[1]||'') + '\nSIG3 ' + (parts[2]||'') + '\nSIG4 ' + (parts[3]||'') + '\nSIG5 ' + (parts[4]||'');
-    } catch (e) { log('ERR', 'parse saved: ' + e); }
+        (ok ? 'VERIFIED-ON-MAINNET-DOMAIN' : 'MISMATCH') +
+        ' | signed with browser on chain ' + (r.activeChain||'?') +
+        ' | EIP712 domain.chainId=' + r.chainId +
+        ' | recovered=' + rec + ' | wallet=' + (r.addr||'?');
+      document.getElementById('o').style.color = ok ? '#0f0' : '#f80';
+    } catch (e) { log('ERR', 'verify: ' + String(e).slice(0,120)); }
   }
-  const hist = localStorage.getItem('eip712_hist');
-  if (hist) log('HIST', hist);
   const prov = window.ethereum;
   if (!prov) { log('PROBE', 'window.ethereum absent — open inside Trust dApp browser'); return; }
   log('PROBE', 'ethereum present, chainId=' + await prov.request({ method: 'eth_chainId' }));
